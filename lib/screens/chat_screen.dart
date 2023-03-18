@@ -7,6 +7,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+//import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 User? loggedInUser;
 final _fireStore = FirebaseFirestore.instance;
@@ -46,15 +49,25 @@ class _ChatScreenState extends State<ChatScreen> {
       _isButtonDisabled = true;
     });
 
-    XFile? file = await ImagePicker().pickImage(
-        source: imgSource ? ImageSource.gallery : ImageSource.camera);
-    if (file != null) {
-      uploadFile(file);
-    } else {
-      imageUrl = '';
+    var file = await ImagePicker().pickImage(
+        source: imgSource ? ImageSource.gallery : ImageSource.camera,
+        imageQuality: 50);
+    if (file == null) {
+      return;
     }
+    // file = await compressImage(file.path, 35);
+    uploadFile(file);
   }
 
+/*
+  Future<dynamic> compressImage(String path, int quality) async {
+    final newPath = p.join((await getTemporaryDirectory()).path,
+        '${DateTime.now()}.${p.extension(path)}');
+    final result = await FlutterImageCompress.compressAndGetFile(path, newPath,
+        quality: quality);
+    return result;
+  }
+*/
   void uploadFile(XFile? newFile) async {
     try {
       firebase_storage.UploadTask uploadingTask;
@@ -62,6 +75,9 @@ class _ChatScreenState extends State<ChatScreen> {
           .ref()
           .child('product')
           .child('/' + newFile!.name);
+
+      print('Reference == ');
+      print(ref);
 
       uploadingTask = ref.putFile(File(newFile.path));
 
