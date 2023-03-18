@@ -69,7 +69,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 height: 24.0,
               ),
               roundButton(
-                  name: 'REGISTER',
+                  name: 'Register',
                   onPress: () async {
                     setState(() {
                       showSpinner = true;
