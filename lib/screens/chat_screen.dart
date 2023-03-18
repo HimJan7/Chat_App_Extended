@@ -7,7 +7,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
-import 'package:flash_chat/screens/data_type.dart';
 
 User? loggedInUser;
 final _fireStore = FirebaseFirestore.instance;
@@ -21,9 +20,9 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _auth = FirebaseAuth.instance;
   final messageController = TextEditingController();
-  String? messageText;
+  String? textFieldData;
   String imageUrl = '';
-
+  bool _isButtonDisabled = false;
   @override
   void initState() {
     super.initState();
@@ -40,6 +39,44 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       print(e);
     }
+  }
+
+  void selectFile(bool imgSource) async {
+    setState(() {
+      _isButtonDisabled = true;
+    });
+
+    XFile? file = await ImagePicker().pickImage(
+        source: imgSource ? ImageSource.gallery : ImageSource.camera);
+    if (file != null) {
+      uploadFile(file);
+    } else {
+      imageUrl = '';
+    }
+  }
+
+  void uploadFile(XFile? newFile) async {
+    try {
+      firebase_storage.UploadTask uploadingTask;
+      firebase_storage.Reference ref = firebase_storage.FirebaseStorage.instance
+          .ref()
+          .child('product')
+          .child('/' + newFile!.name);
+
+      uploadingTask = ref.putFile(File(newFile.path));
+
+      await uploadingTask.whenComplete(() => null);
+      String uploadedUrl = await ref.getDownloadURL();
+
+      imageUrl = uploadedUrl;
+      print('image url == ' + imageUrl);
+    } catch (e) {
+      print(e);
+      imageUrl = '';
+    }
+    setState(() {
+      _isButtonDisabled = false;
+    });
   }
 
   @override
@@ -72,10 +109,52 @@ class _ChatScreenState extends State<ChatScreen> {
                   GestureDetector(
                     onTap: () async {
                       showModalBottomSheet(
-                        context: context,
-                        builder: (context) => DataType(),
-                      );
-                      //  Navigator.pop(context);
+                          context: context,
+                          builder: (context) => Container(
+                                padding: EdgeInsets.all(20),
+                                child: Column(
+                                  children: [
+                                    ElevatedButton(
+                                        onPressed: () {
+                                          selectFile(true);
+                                          Navigator.pop(context);
+                                        },
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text('Gallery Image'),
+                                            Icon(Icons.image),
+                                          ],
+                                        )),
+                                    ElevatedButton(
+                                        onPressed: () {
+                                          selectFile(false);
+                                          Navigator.pop(context);
+                                        },
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text('Camera Image'),
+                                            Icon(Icons.image),
+                                          ],
+                                        )),
+                                    ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text('Audio'),
+                                            Icon(Icons.mic),
+                                          ],
+                                        )),
+                                  ],
+                                ),
+                              ));
                     },
                     child: Container(
                         child: Row(
@@ -94,23 +173,35 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: TextField(
                       controller: messageController,
                       onChanged: (value) {
-                        messageText = value;
+                        textFieldData = value;
                       },
                       decoration: kMessageTextFieldDecoration,
                     ),
                   ),
                   ElevatedButton(
                     onPressed: () {
-                      messageController.clear();
-                      if (messageText != null) {
-                        _fireStore.collection('messages').add({
-                          'text': messageText,
-                          'sender': loggedInUser!.email,
-                          'date': DateTime.now().toIso8601String().toString(),
-                          'url': '',
-                        });
+                      if (_isButtonDisabled == false) {
+                        messageController.clear();
+                        String? newMessageText = textFieldData;
+
+                        if (imageUrl != '' || newMessageText != '') {
+                          _fireStore.collection('messages').add({
+                            'text': newMessageText,
+                            'sender': loggedInUser!.email,
+                            'date': DateTime.now().toIso8601String().toString(),
+                            'url': imageUrl,
+                          });
+                          textFieldData = '';
+                          imageUrl = '';
+                        }
                       }
                     },
+                    style: ButtonStyle(
+                      backgroundColor: MaterialStatePropertyAll(
+                          _isButtonDisabled == false
+                              ? Colors.lightBlueAccent.shade400
+                              : Colors.lightBlueAccent.shade100),
+                    ),
                     child: Text(
                       'Send',
                       style: kSendButtonTextStyle.copyWith(color: Colors.white),
@@ -141,7 +232,7 @@ class messageStream extends StatelessWidget {
           for (var message in messages) {
             final messageText = message.get('text');
             final messagesender = message.get('sender');
-            final ImageUrl = message.get('url');
+            final readImageUrl = message.get('url');
             final currentuser = loggedInUser?.email;
 
             messageBubbles.add(
@@ -149,7 +240,7 @@ class messageStream extends StatelessWidget {
                 text: messageText,
                 sender: messagesender,
                 self: currentuser == messagesender,
-                url: ImageUrl,
+                url: readImageUrl,
               ),
             );
           }
@@ -187,34 +278,54 @@ class messageBubble extends StatelessWidget {
             '$sender',
             style: TextStyle(fontSize: 12, color: Colors.black54),
           ),
-          url != ''
-              ? Container(
-                  width: 200,
-                  child: Image.network(url),
-                )
-              : Material(
-                  borderRadius: self
-                      ? BorderRadius.only(
-                          topLeft: Radius.circular(30),
-                          bottomLeft: Radius.circular(30),
-                          bottomRight: Radius.circular(30))
-                      : BorderRadius.only(
-                          topRight: Radius.circular(30),
-                          bottomLeft: Radius.circular(30),
-                          bottomRight: Radius.circular(30)),
-                  elevation: 5,
-                  color: self ? Colors.lightBlueAccent : Colors.white,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 10, horizontal: 20),
-                    child: Text(
+          Material(
+            borderRadius: self
+                ? BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30))
+                : BorderRadius.only(
+                    topRight: Radius.circular(30),
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30)),
+            elevation: 5,
+            color: self ? Colors.lightBlueAccent : Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+              child: url == ''
+                  ? Text(
                       '$text',
                       style: TextStyle(
                           fontSize: 15,
                           color: self ? Colors.white : Colors.black54),
-                    ),
-                  ),
-                ),
+                    )
+                  : text == ''
+                      ? Container(
+                          width: 200,
+                          child: Image.network(url),
+                        )
+                      : Column(children: [
+                          Container(
+                              width: 200,
+                              child: Column(
+                                children: [
+                                  Image.network(url),
+                                  SizedBox(
+                                    height: 5,
+                                  ),
+                                  Text(
+                                    '$text',
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        color: self
+                                            ? Colors.white
+                                            : Colors.black54),
+                                  ),
+                                ],
+                              )),
+                        ]),
+            ),
+          ),
         ],
       ),
     );
