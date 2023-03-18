@@ -91,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       }
                     }
                   },
-                  name: 'Log In')
+                  name: 'LOG IN')
             ],
           ),
         ),

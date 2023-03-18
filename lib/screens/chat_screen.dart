@@ -111,20 +111,24 @@ class _ChatScreenState extends State<ChatScreen> {
                       showModalBottomSheet(
                           context: context,
                           builder: (context) => Container(
-                                padding: EdgeInsets.all(20),
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 40, vertical: 20),
                                 child: Column(
                                   children: [
                                     ElevatedButton(
                                         onPressed: () {
-                                          selectFile(true);
+                                          selectFile(false);
                                           Navigator.pop(context);
                                         },
                                         child: Row(
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
                                           children: [
-                                            Text('Gallery Image'),
                                             Icon(Icons.image),
+                                            SizedBox(
+                                              width: 10,
+                                            ),
+                                            Text('Gallery Image'),
                                           ],
                                         )),
                                     ElevatedButton(
@@ -136,8 +140,11 @@ class _ChatScreenState extends State<ChatScreen> {
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
                                           children: [
-                                            Text('Camera Image'),
                                             Icon(Icons.image),
+                                            SizedBox(
+                                              width: 10,
+                                            ),
+                                            Text('Camera Image'),
                                           ],
                                         )),
                                     ElevatedButton(
@@ -148,8 +155,11 @@ class _ChatScreenState extends State<ChatScreen> {
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
                                           children: [
-                                            Text('Audio'),
                                             Icon(Icons.mic),
+                                            SizedBox(
+                                              width: 10,
+                                            ),
+                                            Text('Record Audio'),
                                           ],
                                         )),
                                   ],
@@ -162,7 +172,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         SizedBox(
                           width: 5,
                         ),
-                        Icon(Icons.image),
+                        Icon(Icons.attach_file),
                         SizedBox(
                           width: 5,
                         ),
@@ -206,6 +216,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       'Send',
                       style: kSendButtonTextStyle.copyWith(color: Colors.white),
                     ),
+                  ),
+                  SizedBox(
+                    width: 20,
                   ),
                 ],
               ),
@@ -269,7 +282,17 @@ class messageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(10.0),
+      padding: self
+          ? EdgeInsets.only(
+              top: 10,
+              bottom: 10,
+              right: 10,
+              left: MediaQuery.of(context).size.width * 0.3)
+          : EdgeInsets.only(
+              top: 10,
+              bottom: 10,
+              right: MediaQuery.of(context).size.width * 0.3,
+              left: 10),
       child: Column(
         crossAxisAlignment:
             self ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -278,42 +301,50 @@ class messageBubble extends StatelessWidget {
             '$sender',
             style: TextStyle(fontSize: 12, color: Colors.black54),
           ),
+          SizedBox(
+            height: 3,
+          ),
           Material(
             borderRadius: self
                 ? BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30))
+                    topLeft: Radius.circular(10),
+                    bottomLeft: Radius.circular(10),
+                    bottomRight: Radius.circular(10))
                 : BorderRadius.only(
-                    topRight: Radius.circular(30),
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30)),
+                    topRight: Radius.circular(10),
+                    bottomLeft: Radius.circular(10),
+                    bottomRight: Radius.circular(10)),
             elevation: 5,
             color: self ? Colors.lightBlueAccent : Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-              child: url == ''
-                  ? Text(
+            child: url == ''
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 20),
+                    child: Text(
                       '$text',
                       style: TextStyle(
                           fontSize: 15,
                           color: self ? Colors.white : Colors.black54),
-                    )
-                  : text == ''
-                      ? Container(
-                          width: 200,
-                          child: Image.network(url),
-                        )
-                      : Column(children: [
-                          Container(
-                              width: 200,
-                              child: Column(
-                                children: [
-                                  Image.network(url),
-                                  SizedBox(
-                                    height: 5,
-                                  ),
-                                  Text(
+                    ),
+                  )
+                : text == ''
+                    ? Container(
+                        width: MediaQuery.of(context).size.width * 0.7,
+                        child: Image.network(url),
+                      )
+                    : Column(children: [
+                        Container(
+                            width: MediaQuery.of(context).size.width * 0.7,
+                            child: Column(
+                              children: [
+                                Image.network(url),
+                                SizedBox(
+                                  height: 5,
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 10, horizontal: 20),
+                                  child: Text(
                                     '$text',
                                     style: TextStyle(
                                         fontSize: 15,
@@ -321,10 +352,10 @@ class messageBubble extends StatelessWidget {
                                             ? Colors.white
                                             : Colors.black54),
                                   ),
-                                ],
-                              )),
-                        ]),
-            ),
+                                ),
+                              ],
+                            )),
+                      ]),
           ),
         ],
       ),
